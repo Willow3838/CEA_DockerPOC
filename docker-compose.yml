@@ -1,0 +1,38 @@
+services:
+  scrapper_linkedin:
+    build: ./CEA_linkedin_scrap
+    # image: "node:latest"
+    # user: "node"
+    working_dir: /home/app/linkedin
+    # environment:
+    #   - NODE_ENV=production
+    volumes:
+      - shared_volume:/shared
+    expose:
+      - "8081"
+    # tty: true
+    command: "node index.js"
+
+  ihm:
+    build: ./IHM
+    # image: "python:latest"
+    working_dir: /home/app/ihm
+    volumes:
+      - shared_volume:/shared
+    ports:
+      - "5000:5000"
+    depends_on:
+      - scrapper_linkedin
+      - mongo
+    command: "python run.py"
+
+  mongo:
+    image: mongo:latest
+    # working_dir: /home/app/mongo
+    # volumes:
+    #   - shared_volume:/home/app
+    expose:
+      - "27017"
+
+volumes:
+  shared_volume:
