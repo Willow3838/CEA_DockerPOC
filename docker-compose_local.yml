@@ -1,7 +1,10 @@
+# commande pour lancer le docker compose en local
+# docker compose -f docker-compose_local.yml --env-file dev.env up
+
+
 # external = true permet qu'on utilise le network extérieur créé dans le docker compose de traefik et nommé traefik_netwk
 networks:
-  traefik_netwk:
-    external: true
+  internal_netwk:
 
 volumes:
   shared_volume:
@@ -9,7 +12,7 @@ volumes:
 services:
   scrapper_linkedin:
     networks:
-      - traefik_netwk
+      - internal_netwk
 
     build: ./CEA_linkedin_scrap
     # image: "node:latest"
@@ -30,15 +33,15 @@ services:
   ihm:
     networks:
       # utilisation du réseau traefik_netwk
-      - traefik_netwk
+      - internal_netwk
 
     build: ./IHM
     # image: "python:latest"
     working_dir: /home/app/ihm
     volumes:
       - shared_volume:/shared
-    #ports:
-      #- "5000:5000"
+    ports:
+      - "5000:5000"
     depends_on:
       - scrapper_linkedin
       - mongo
@@ -59,24 +62,9 @@ services:
     #donner un nom au container (optionnel)
     container_name: ${APP_NAME:?}
 
-    labels:
-      - "traefik.enable=true"
-
-      # router nommé ${APP_NAME} définissant l'accès au service
-      - "traefik.http.routers.${APP_NAME:?}.rule=Host(`${SUBDOMAIN:?}.${DOMAIN:?}`)"
-      - "traefik.http.routers.${APP_NAME:?}.tls=true"
-
-      # service nommé ${APP_NAME} pour indiquer le port utilisé par l'app dans le container (permet de remplacer le mapping de ports pour le service)
-      # 8501 est le port utilisé par streamlit
-      - "traefik.http.services.${APP_NAME:?}.loadbalancer.server.port=${APP_EXPOSED_PORT:?}"
-
-      # rajouter admin_auth dans les middlewares si on veut mettre une authentification sur cette app
-      - "traefik.http.routers.${APP_NAME:?}.middlewares=security-headers"
-
-
   mongo:
     networks:
-      - traefik_netwk
+      - internal_netwk
 
     #image: mongo:latest
     # version image compatible avec le CPU de la VM
